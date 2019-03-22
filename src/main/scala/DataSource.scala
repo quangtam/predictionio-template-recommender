@@ -1,4 +1,4 @@
-package org.example.recommendation
+package vn.accesstrade.recommendation
 
 import org.apache.predictionio.controller.PDataSource
 import org.apache.predictionio.controller.EmptyEvaluationInfo

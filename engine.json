@@ -1,7 +1,7 @@
 {
   "id": "default",
   "description": "Default settings",
-  "engineFactory": "org.example.recommendation.RecommendationEngine",
+  "engineFactory": "vn.accesstrade.recommendation.RecommendationEngine",
   "datasource": {
     "params" : {
       "appName": "ISVN"
