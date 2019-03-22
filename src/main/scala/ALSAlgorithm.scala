@@ -38,11 +38,11 @@ class ALSAlgorithm(val ap: ALSAlgorithmParams)
       " and Preparator generates PreparedData correctly.")
     // Convert user and item String IDs to Int index for MLlib
 
-    val userStringIntMap = BiMap.stringInt(data.ratings.map(_.user))
-    val itemStringIntMap = BiMap.stringInt(data.ratings.map(_.item))
+    val userStringIntMap = BiMap.stringInt(data.ratings.map(_.publisher))
+    val itemStringIntMap = BiMap.stringInt(data.ratings.map(_.campaign))
     val mllibRatings = data.ratings.map( r =>
       // MLlibRating requires integer index for user and item
-      MLlibRating(userStringIntMap(r.user), itemStringIntMap(r.item), r.rating)
+      MLlibRating(userStringIntMap(r.publisher), itemStringIntMap(r.campaign), r.rating)
     )
 
     // seed for MLlib ALS
@@ -82,10 +82,10 @@ class ALSAlgorithm(val ap: ALSAlgorithmParams)
       // recommendProducts() returns Array[MLlibRating], which uses item Int
       // index. Convert it to String ID for returning PredictedResult
       val itemScores = model.recommendProducts(userInt, query.num)
-        .map (r => ItemScore(itemIntStringMap(r.product), r.rating))
+        .map (r => CampaignScore(itemIntStringMap(r.product), r.rating))
       PredictedResult(itemScores)
     }.getOrElse{
-      logger.info(s"No prediction for unknown user ${query.user}.")
+      logger.info(s"No prediction for unknown publisher ${query.user}.")
       PredictedResult(Array.empty)
     }
   }
@@ -111,26 +111,26 @@ class ALSAlgorithm(val ap: ALSAlgorithmParams)
 
     // The following code construct predicted results from mllib's ratings.
     // Not optimal implementation. Instead of groupBy, should use combineByKey with a PriorityQueue
-    val userRatings: RDD[(Int, Iterable[MLlibRating])] = ratings.groupBy(_.user)
+    val publisherRatings: RDD[(Int, Iterable[MLlibRating])] = ratings.groupBy(_.user)
 
-    userIxQueries.leftOuterJoin(userRatings)
+    userIxQueries.leftOuterJoin(publisherRatings)
     .map {
       // When there are ratings
-      case (userIx, ((ix, query), Some(ratings))) => {
-        val topItemScores: Array[ItemScore] = ratings
+      case (publisherIx, ((ix, query), Some(ratings))) => {
+        val topCampaignScores: Array[CampaignScore] = ratings
         .toArray
         .sortBy(_.rating)(Ordering.Double.reverse) // note: from large to small ordering
         .take(query.num)
-        .map { rating => ItemScore(
+        .map { rating => CampaignScore(
           model.itemStringIntMap.inverse(rating.product),
           rating.rating) }
 
-        (ix, PredictedResult(itemScores = topItemScores))
+        (ix, PredictedResult(campaignScores = topCampaignScores))
       }
       // When user doesn't exist in training data
-      case (userIx, ((ix, query), None)) => {
-        require(userIx == -1)
-        (ix, PredictedResult(itemScores = Array.empty))
+      case (publisherIx, ((ix, query), None)) => {
+        require(publisherIx == -1)
+        (ix, PredictedResult(campaignScores = Array.empty))
       }
     }
   }

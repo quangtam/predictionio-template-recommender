@@ -9,15 +9,15 @@ case class Query(
 )
 
 case class PredictedResult(
-  itemScores: Array[ItemScore]
+  campaignScores: Array[CampaignScore]
 )
 
 case class ActualResult(
   ratings: Array[Rating]
 )
 
-case class ItemScore(
-  item: String,
+case class CampaignScore(
+  campaign: String,
   score: Double
 )
 

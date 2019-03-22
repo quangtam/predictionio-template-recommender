@@ -26,7 +26,7 @@ case class PrecisionAtK(k: Int, ratingThreshold: Double = 2.0)
     if (positives.size == 0) {
       None
     } else {
-      val tpCount: Int = p.itemScores.take(k).filter(is => positives(is.item)).size
+      val tpCount: Int = p.itemScores.take(k).filter(is => positives(is.campaign)).size
       Some(tpCount.toDouble / math.min(k, positives.size))
     }
   }

@@ -27,16 +27,16 @@ class DataSource(val dsp: DataSourceParams)
 
     val eventsRDD: RDD[Event] = PEventStore.find(
       appName = dsp.appName,
-      entityType = Some("user"),
-      eventNames = Some(List("rate", "buy")), // read "rate" and "buy" event
+      entityType = Some("publisher"),
+      eventNames = Some(List("rate", "join")), // read "rate" and "join" event
       // targetEntityType is optional field of an event.
-      targetEntityType = Some(Some("item")))(sc)
+      targetEntityType = Some(Some("campaign")))(sc)
 
     val ratingsRDD: RDD[Rating] = eventsRDD.map { event =>
       val rating = try {
         val ratingValue: Double = event.event match {
           case "rate" => event.properties.get[Double]("rating")
-          case "buy" => 4.0 // map buy event to rating value of 4
+          case "join" => 4.0 // map buy event to rating value of 4
           case _ => throw new Exception(s"Unexpected event ${event} is read.")
         }
         // entityId and targetEntityId is String
@@ -74,12 +74,12 @@ class DataSource(val dsp: DataSourceParams)
       val trainingRatings = ratings.filter(_._2 % kFold != idx).map(_._1)
       val testingRatings = ratings.filter(_._2 % kFold == idx).map(_._1)
 
-      val testingUsers: RDD[(String, Iterable[Rating])] = testingRatings.groupBy(_.user)
+      val testingPublishers: RDD[(String, Iterable[Rating])] = testingRatings.groupBy(_.publisher)
 
       (new TrainingData(trainingRatings),
         new EmptyEvaluationInfo(),
-        testingUsers.map {
-          case (user, ratings) => (Query(user, evalParams.queryNum), ActualResult(ratings.toArray))
+        testingPublishers.map {
+          case (publisher, ratings) => (Query(publisher, evalParams.queryNum), ActualResult(ratings.toArray))
         }
       )
     }}
@@ -87,8 +87,8 @@ class DataSource(val dsp: DataSourceParams)
 }
 
 case class Rating(
-  user: String,
-  item: String,
+  publisher: String,
+  campaign: String,
   rating: Double
 )
 
